@@ -1,8 +1,8 @@
 import Tesseract from "tesseract.js";
+import cacheService from "../cache/cacheService";
 
 export class TessService {
     lang = 'eng';
-    cache = new Map();
 
     async generateCacheKey(image) {
         if (typeof image === 'string') {
@@ -16,17 +16,12 @@ export class TessService {
         }
     }
 
-    clearCache() {
-        this.cache.clear();
-        console.log("Cache cleared.");
-    }
-
     async recognizeText(image, language = this.lang) {
         const cacheKey = await this.generateCacheKey(image);
 
-        if (this.cache.has(cacheKey)) {
+        if (cacheService.has(cacheKey)) {
             console.log("Returning cached result for: ", cacheKey);
-            return this.cache.get(cacheKey);
+            return cacheService.get(cacheKey);
         }
 
         const worker = await Tesseract.createWorker(language);
@@ -35,7 +30,7 @@ export class TessService {
             const resultLines = result?.data?.lines;
 
             // Cache the result
-            this.cache.set(cacheKey, { result, resultLines });
+            cacheService.set(cacheKey, { result, resultLines });
             console.log("Caching result for:", cacheKey);
 
             return { result, resultLines };
