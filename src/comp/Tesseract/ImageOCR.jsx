@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import tessService from '../../services/tess';
-import TextImagePortion from './TextImagePortion';
+import cacheService from '../../cache/cacheService';
 
 const ImageOcr = () => {
   const [processedImages, setProcessedImages] = useState([]);
@@ -31,7 +31,8 @@ const ImageOcr = () => {
           updatedImages[i].image,
           'eng'
         );
-        updatedImages[i].text = resultLines;
+        const {data: {text}} = result;
+        updatedImages[i].text = text;
         setProgress(`Processed image ${i + 1} of ${updatedImages.length}`);
         console.log(result, resultLines);
       } catch (error) {
@@ -71,7 +72,27 @@ const ImageOcr = () => {
       <article className="mt-4">
         {
           processedImages.map((item, index) => (
-            item.text && <TextImagePortion data={item.text} image={item.image} key={index} />
+            item.text && (
+              <article className='p-3 my-6 flex justify-center items-center gap-4 bg-zinc-800 rounded-3xl' key={index}>
+                  <figure className='max-w-[400px] min-w-[300px] h-auto rounded-2xl overflow-hidden'>
+                      <img 
+                          src={URL.createObjectURL(item.image)} 
+                          alt="Target Image"
+                          width={300}
+                          height='auto' 
+                      />
+                  </figure>
+          
+                  <article className='p-4 rounded-2xl mb-1 border-dashed border-zinc-300 border-2 w-2/3 text-left'>
+                      <h2 className='mb-4 font-bold text-zinc-400 italic'>Text from {item.image.name}:</h2>
+                      {
+                          <p className='whitespace-pre-wrap'>
+                            {item.text}
+                          </p>
+                      }
+                  </article>
+              </article>
+            )
           ))
         }
       </article>

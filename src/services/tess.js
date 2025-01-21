@@ -4,6 +4,7 @@ import cacheService from "../cache/cacheService";
 export class TessService {
     lang = 'eng';
 
+    // Generate a cache key for the image
     async generateCacheKey(image) {
         if (typeof image === 'string') {
             // Use the file path directly if available
@@ -15,6 +16,13 @@ export class TessService {
             return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
         }
     }
+
+    /**
+     * Recognizes text from an image using Tesseract OCR.
+     * 
+     * This function first checks if the result is already cached. If not, it creates a Tesseract worker,
+     * processes the image to recognize text, caches the result, and then returns the recognized text (overall data) and lines.
+     */
 
     async recognizeText(image, language = this.lang) {
         const cacheKey = await this.generateCacheKey(image);
