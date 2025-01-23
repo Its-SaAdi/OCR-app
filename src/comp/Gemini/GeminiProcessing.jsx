@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import GeminiService from '../../services/GeminiService';
 import cacheService from '../../cache/cacheService';
+import { jsPDF } from 'jspdf';
 
 const generateImageHash = (base64) => {
     let hash = 0;
@@ -111,6 +112,23 @@ const ImageProcessor = () => {
     navigator.clipboard.writeText(textToCopy).then(() => alert('Text copied to clipboard!'));
   };
 
+  const handleDownloadText = (index) => {
+    const textToDownload = texts[index];
+    const blob = new Blob([textToDownload], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `extracted_text_${index + 1}.txt`;
+    a.click();
+  };
+
+  const handleDownloadPDF = (index) => {
+    const textToDownload = texts[index];
+    const doc = new jsPDF();
+    doc.text(textToDownload, 10, 10);
+    doc.save(`extracted_text_${index + 1}.pdf`);
+  }
+ 
   return (
     <div className="p-4">
         <h1 className="text-2xl font-bold mb-4">Google Gemini Vision OCR</h1>
@@ -177,6 +195,24 @@ const ImageProcessor = () => {
                         >
                             Copy
                         </button>
+
+                        {/* Download Buttons */}
+                        <div className="ml-2 mt-2 flex space-x-2">
+                          <button
+                            onClick={() => handleDownloadText(index)}
+                            className="bg-white text-black px-2 py-1 rounded hover:bg-gray-300"
+                          >
+                            Download Text
+                          </button>
+
+                          <button
+                            onClick={() => handleDownloadPDF(index)}
+                            className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-500"
+                          >
+                            Download PDF
+                          </button>
+                          
+                        </div>
                       </div>
                     </>
                   )}
