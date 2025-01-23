@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import GeminiService from '../../services/GeminiService';
 import cacheService from '../../cache/cacheService';
 import { jsPDF } from 'jspdf';
+import { saveAs } from 'file-saver';
+import { Document, Paragraph, Packer, TextRun } from 'docx';
+import * as XLSX from 'xlsx';
 
 const generateImageHash = (base64) => {
     let hash = 0;
@@ -128,6 +131,35 @@ const ImageProcessor = () => {
     doc.text(textToDownload, 10, 10);
     doc.save(`extracted_text_${index + 1}.pdf`);
   }
+
+  const handleDownloadWord = (index) => {
+    const textToDownload = texts[index] || 'No text found';
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            new Paragraph({
+              children: [new TextRun(textToDownload)],
+            }),
+          ],
+        },
+      ],
+    });
+
+    Packer.toBlob(doc).then((blob) => {
+      saveAs(blob, `ExtractedText_${index + 1}.docx`);
+    }); 
+  };
+
+  // aoa_to_sheet accepts an array of arrays ([["Row1Col1", "Row1Col2"], ["Row2Col1", "Row2Col2"]]) to create the Excel sheet.
+  const handleDownloadExcel = (index) => {
+    const textToDownload = texts[index] || 'No text found';
+    const worksheet = XLSX.utils.aoa_to_sheet([['Extracted Text'], [textToDownload]]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ExtractedText');
+    XLSX.writeFile(workbook, `ExtractedText_${index + 1}.xlsx`);
+  };
  
   return (
     <div className="p-4">
@@ -198,18 +230,36 @@ const ImageProcessor = () => {
 
                         {/* Download Buttons */}
                         <div className="ml-2 mt-2 flex space-x-2">
+                          {/* .txt file */}
                           <button
                             onClick={() => handleDownloadText(index)}
                             className="bg-white text-black px-2 py-1 rounded hover:bg-gray-300"
                           >
-                            Download Text
+                            Text
                           </button>
 
+                          {/* .pdf file */}
                           <button
                             onClick={() => handleDownloadPDF(index)}
                             className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-500"
                           >
-                            Download PDF
+                            PDF
+                          </button>
+
+                          {/* word file */}
+                          <button
+                            onClick={() => handleDownloadWord(index)}
+                            className="bg-blue-500 text-white px-2 py-1 rounded mt-2 hover:bg-blue-600"
+                          >
+                            Word
+                          </button>
+
+                          {/* excel file */}
+                          <button
+                            onClick={() => handleDownloadExcel(index)}
+                            className="bg-green-500 text-white px-2 py-1 rounded mt-2 hover:bg-green-600"
+                          >
+                            Excel
                           </button>
                           
                         </div>
