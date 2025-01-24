@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import GeminiService from '../../services/GeminiService';
 import cacheService from '../../cache/cacheService';
-import { jsPDF } from 'jspdf';
+import { generatePDF, generateTxt } from '../../services/pdf_txt_service';
 import { saveAs } from 'file-saver';
 import { Document, Paragraph, Packer, TextRun } from 'docx';
 import * as XLSX from 'xlsx';
@@ -105,9 +105,9 @@ const ImageProcessor = () => {
     const updatedText = texts[index];
     const imageHash = generateImageHash(images[index].base64);
 
-    // Save the updated text to the cache
+    // Save the updated text to the cache and exit editing mode
     cacheService.update(imageHash, updatedText);
-    setEditingIndex(null); // Exit editing mode
+    setEditingIndex(null);
   };
 
   const handleCopy = (index) => {
@@ -117,19 +117,12 @@ const ImageProcessor = () => {
 
   const handleDownloadText = (index) => {
     const textToDownload = texts[index];
-    const blob = new Blob([textToDownload], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `extracted_text_${index + 1}.txt`;
-    a.click();
+    generateTxt(textToDownload);
   };
 
   const handleDownloadPDF = (index) => {
     const textToDownload = texts[index];
-    const doc = new jsPDF();
-    doc.text(textToDownload, 10, 10);
-    doc.save(`extracted_text_${index + 1}.pdf`);
+    generatePDF(textToDownload);
   }
 
   const handleDownloadWord = (index) => {
@@ -152,12 +145,43 @@ const ImageProcessor = () => {
     }); 
   };
 
+  // check for table or sentence like structure
+  const isTableLike = (text) => {
+    // Check if the text contains multiple lines and has consistent delimiters like commas or tabs
+    const rows = text.split("\n").filter((row) => row.trim() !== "");
+    if (rows.length > 1) {
+      const delimiters = [",", "\t", "  "]; // Common delimiters: comma, tab, or multiple spaces
+      for (let delimiter of delimiters) {
+        const firstRowCols = rows[0].split(delimiter);
+        const otherRowCols = rows.slice(1).map((row) => row.split(delimiter));
+        if (otherRowCols.every((cols) => cols.length === firstRowCols.length)) {
+          return { isTable: true, delimiter };
+        }
+      }
+    }
+    return { isTable: false };
+  };
+
   // aoa_to_sheet accepts an array of arrays ([["Row1Col1", "Row1Col2"], ["Row2Col1", "Row2Col2"]]) to create the Excel sheet.
   const handleDownloadExcel = (index) => {
-    const textToDownload = texts[index] || 'No text found';
-    const worksheet = XLSX.utils.aoa_to_sheet([['Extracted Text'], [textToDownload]]);
+    const text = texts[index] || "No text extracted.";
+    const { isTable, delimiter } = isTableLike(text);
+  
+    let worksheet;
+    if (isTable) {
+      // Format as table
+      const rows = text
+        .split("\n")
+        .filter((row) => row.trim() !== "")
+        .map((row) => row.split(delimiter));
+      worksheet = XLSX.utils.aoa_to_sheet(rows);
+    } else {
+      // Format as sentence
+      worksheet = XLSX.utils.aoa_to_sheet([["Extracted Text"], [text]]);
+    }
+  
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'ExtractedText');
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Extracted Text");
     XLSX.writeFile(workbook, `ExtractedText_${index + 1}.xlsx`);
   };
  
