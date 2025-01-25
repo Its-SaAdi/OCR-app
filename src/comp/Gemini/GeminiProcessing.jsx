@@ -126,6 +126,7 @@ const ImageProcessor = () => {
 
   const handleDownloadWord = (index) => {
     const textToDownload = texts[index] || 'No text found';
+    console.log(textToDownload);
     const doc = new Document({
       sections: [
         {
@@ -148,17 +149,37 @@ const ImageProcessor = () => {
   const isTableLike = (text) => {
     // Check if the text contains multiple lines and has consistent delimiters like commas or tabs
     const rows = text.split("\n").filter((row) => row.trim() !== "");
-    if (rows.length > 1) {
-      const delimiters = [",", "\t", "  "]; // Common delimiters: comma, tab, or multiple spaces
-      for (let delimiter of delimiters) {
-        const firstRowCols = rows[0].split(delimiter);
-        const otherRowCols = rows.slice(1).map((row) => row.split(delimiter));
-        if (otherRowCols.every((cols) => cols.length === firstRowCols.length)) {
-          return { isTable: true, delimiter };
-        }
+
+    // Detect delimiters in the first row
+    const delimiters = ["\t", ",", " "]; // Common table delimiters
+    let detectedDelimiter = null;
+
+    for (const delimiter of delimiters) {
+      const firstRowColumns = rows[0].split(delimiter);
+      if (firstRowColumns.length > 1) {
+        detectedDelimiter = delimiter;
+        break;
       }
     }
-    return { isTable: false };
+
+    // Validate consistency across all rows
+    const isTable = rows.every((row) =>
+      detectedDelimiter ? row.split(detectedDelimiter).length > 1 : false
+    );
+
+    return { isTable, delimiter: detectedDelimiter || "\t" }; // Default to '\t' if no reliable delimiter found
+
+    // if (rows.length > 1) {
+    //   const delimiters = [",", "\t", "  "]; // Common delimiters: comma, tab, or multiple spaces
+    //   for (let delimiter of delimiters) {
+    //     const firstRowCols = rows[0].split(delimiter);
+    //     const otherRowCols = rows.slice(1).map((row) => row.split(delimiter));
+    //     if (otherRowCols.every((cols) => cols.length === firstRowCols.length)) {
+    //       return { isTable: true, delimiter };
+    //     }
+    //   }
+    // }
+    // return { isTable: false };
   };
 
   // aoa_to_sheet accepts an array of arrays ([["Row1Col1", "Row1Col2"], ["Row2Col1", "Row2Col2"]]) to create the Excel sheet.
@@ -172,7 +193,8 @@ const ImageProcessor = () => {
       const rows = text
         .split("\n")
         .filter((row) => row.trim() !== "")
-        .map((row) => row.split(delimiter));
+        .map((row) => row.split(delimiter).map((cell) => cell.trim()));
+        
       worksheet = XLSX.utils.aoa_to_sheet(rows);
     } else {
       // Format as sentence
