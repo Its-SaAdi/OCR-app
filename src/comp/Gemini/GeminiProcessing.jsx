@@ -1,20 +1,10 @@
-import React, { useState } from 'react';
-import GeminiService from '../../services/GeminiService';
+import React, { useState, useCallback } from 'react';
+import geminiService from '../../services/GeminiService';
 import cacheService from '../../cache/cacheService';
 import { generatePDF, generateTxt } from '../../services/pdf_txt_service';
 import { saveAs } from 'file-saver';
 import { Document, Paragraph, Packer, TextRun } from 'docx';
 import * as XLSX from 'xlsx';
-
-const generateImageHash = (base64) => {
-    let hash = 0;
-    for (let i = 0; i < base64.length; i++) {
-      const char = base64.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0; // Convert to 32bit integer
-    }
-    return hash.toString();
-  };
 
 const ImageProcessor = () => {
   const [images, setImages] = useState([]);
@@ -23,8 +13,18 @@ const ImageProcessor = () => {
   const [isProcessing, setIsProcessing] = useState(false); // Button disabled flag
   const [isProcessed, setIsProcessed] = useState(false); // Flag to check if images have been processed
   const [editingIndex, setEditingIndex] = useState(null); // Track which text is being edited
+  
+  const generateImageHash = useCallback((base64) => {
+    let hash = 0;
+    for (let i = 0; i < base64.length; i++) {
+      const char = base64.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return hash.toString();
+  }, []);
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = useCallback((event) => {
     const files = event.target.files;
     const imagePromises = Array.from(files).map((file) => {
       return new Promise((resolve, reject) => {
@@ -45,11 +45,10 @@ const ImageProcessor = () => {
       setTexts(Array(imageData.length).fill(''));
       setIsProcessed(false);
     });
-  };
+  }, [setImages, setTexts, setIsProcessed]);
 
-  const processImages = async () => {
-    const geminiService = new GeminiService();
-    setStatus('Processing images...');
+  const processImages = useCallback(async () => {
+    setStatus("Processing images... Please wait ⏳");
     setIsProcessing(true);
 
     const newTexts = [...texts];
@@ -92,23 +91,23 @@ const ImageProcessor = () => {
     }
 
     setTexts(newTexts);
-    setStatus('Processing complete!');
+    setStatus('Processing complete! ✅');
     setIsProcessing(false);
     setIsProcessed(true);
-  };
+  }, [setStatus, setIsProcessing, images, texts, generateImageHash]);
 
-  const handleEdit = (index) => {
+  const handleEdit = useCallback((index) => {
     setEditingIndex(index);
-  };
+  }, [setEditingIndex]);
 
-  const handleSave = (index) => {
+  const handleSave = useCallback((index) => {
     const updatedText = texts[index];
     const imageHash = generateImageHash(images[index].base64);
 
     // Save the updated text to the cache and exit editing mode
     cacheService.update(imageHash, updatedText);
     setEditingIndex(null);
-  };
+  }, [texts, images, generateImageHash, setEditingIndex]);
 
   const handleCopy = (index) => {
     const textToCopy = texts[index];

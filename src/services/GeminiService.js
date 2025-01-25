@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import conf from '../config/conf';
 
-class GeminiService {
+export class GeminiService {
   constructor() {
     this.genAI = new GoogleGenerativeAI(conf.geminiApi);
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -27,4 +27,5 @@ class GeminiService {
   }
 }
 
-export default GeminiService;
+const geminiService = new GeminiService();
+export default geminiService;
