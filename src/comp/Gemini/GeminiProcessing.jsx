@@ -2,9 +2,7 @@ import React, { useState, useCallback } from 'react';
 import geminiService from '../../services/GeminiService';
 import cacheService from '../../cache/cacheService';
 import { generatePDF, generateTxt } from '../../services/pdf_txt_service';
-import { saveAs } from 'file-saver';
-import { Document, Paragraph, Packer, TextRun } from 'docx';
-import * as XLSX from 'xlsx';
+import { generateDocx, generateXlsx } from '../../services/docx_xlsx_service';
 
 const ImageProcessor = () => {
   const [images, setImages] = useState([]);
@@ -48,8 +46,13 @@ const ImageProcessor = () => {
   }, [setImages, setTexts, setIsProcessed]);
 
   const processImages = useCallback(async () => {
-    setStatus("Processing images... Please wait ⏳");
+    if (images.length === 0) {
+      setStatus('Please select at least one image file..');
+      return;
+    }
+
     setIsProcessing(true);
+    setStatus("Processing images... Please wait ⏳");
 
     const newTexts = [...texts];
 
@@ -126,107 +129,93 @@ const ImageProcessor = () => {
 
   const handleDownloadWord = (index) => {
     const textToDownload = texts[index] || 'No text found';
-    console.log(textToDownload);
-    const doc = new Document({
-      sections: [
-        {
-          properties: {},
-          children: [
-            new Paragraph({
-              children: [new TextRun(textToDownload)],
-            }),
-          ],
-        },
-      ],
-    });
+    generateDocx(textToDownload);
+    // const { isTable, delimiter } = isTableLike(textToDownload);
 
-    Packer.toBlob(doc).then((blob) => {
-      saveAs(blob, `ExtractedText_${index + 1}.docx`);
-    }); 
-  };
+    // let documentContent;
+    // if (isTable) {
+      
+    //   const rows = formatTableData(textToDownload, delimiter);
 
-  // check for table or sentence like structure
-  const isTableLike = (text) => {
-    // Check if the text contains multiple lines and has consistent delimiters like commas or tabs
-    const rows = text.split("\n").filter((row) => row.trim() !== "");
+    //   const table = new Table({
+    //     rows: rows.map((row) =>
+    //       new TableRow({
+    //         children: row.map((cell) =>
+    //           new TableCell({
+    //             children: [new Paragraph({ children: [new TextRun(cell)] })],
+    //           })
+    //         ),
+    //       })
+    //     ),
+    //   });
 
-    // Detect delimiters in the first row
-    const delimiters = ["\t", ",", " "]; // Common table delimiters
-    let detectedDelimiter = null;
+    //   documentContent = [table];
+    // } else {
+    //   const paragraph = new Paragraph({
+    //     children: [new TextRun(textToDownload)],
+    //   });
 
-    for (const delimiter of delimiters) {
-      const firstRowColumns = rows[0].split(delimiter);
-      if (firstRowColumns.length > 1) {
-        detectedDelimiter = delimiter;
-        break;
-      }
-    }
-
-    // Validate consistency across all rows
-    const isTable = rows.every((row) =>
-      detectedDelimiter ? row.split(detectedDelimiter).length > 1 : false
-    );
-
-    return { isTable, delimiter: detectedDelimiter || "\t" }; // Default to '\t' if no reliable delimiter found
-
-    // if (rows.length > 1) {
-    //   const delimiters = [",", "\t", "  "]; // Common delimiters: comma, tab, or multiple spaces
-    //   for (let delimiter of delimiters) {
-    //     const firstRowCols = rows[0].split(delimiter);
-    //     const otherRowCols = rows.slice(1).map((row) => row.split(delimiter));
-    //     if (otherRowCols.every((cols) => cols.length === firstRowCols.length)) {
-    //       return { isTable: true, delimiter };
-    //     }
-    //   }
+    //   documentContent = [paragraph];
     // }
-    // return { isTable: false };
+
+    // const doc = new Document({
+    //   sections: [
+    //     {
+    //       properties: {},
+    //       children: documentContent,
+    //     },
+    //   ],
+    // });
+
+    // Packer.toBlob(doc).then((blob) => {
+    //   saveAs(blob, `ExtractedText_${index + 1}.docx`);
+    // }); 
   };
 
   // aoa_to_sheet accepts an array of arrays ([["Row1Col1", "Row1Col2"], ["Row2Col1", "Row2Col2"]]) to create the Excel sheet.
   const handleDownloadExcel = (index) => {
     const text = texts[index] || "No text extracted.";
-    const { isTable, delimiter } = isTableLike(text);
+    generateXlsx(text);
+
+    // const { isTable, delimiter } = isTableLike(text);
   
-    let worksheet;
-    if (isTable) {
-      // Format as table
-      const rows = text
-        .split("\n")
-        .filter((row) => row.trim() !== "")
-        .map((row) => row.split(delimiter).map((cell) => cell.trim()));
+    // let worksheet;
+    // if (isTable) {
+    //   // Format as table
+    //   const rows = formatTableData(text, delimiter);
         
-      worksheet = XLSX.utils.aoa_to_sheet(rows);
-    } else {
-      // Format as sentence
-      worksheet = XLSX.utils.aoa_to_sheet([["Extracted Text"], [text]]);
-    }
+    //   worksheet = XLSX.utils.aoa_to_sheet(rows);
+    // } else {
+    //   // Format as sentence
+    //   worksheet = XLSX.utils.aoa_to_sheet([["Extracted Text"], [text]]);
+    // }
   
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Extracted Text");
-    XLSX.writeFile(workbook, `ExtractedText_${index + 1}.xlsx`);
+    // const workbook = XLSX.utils.book_new();
+    // XLSX.utils.book_append_sheet(workbook, worksheet, "Extracted Text");
+    // XLSX.writeFile(workbook, `ExtractedText_${index + 1}.xlsx`);
   };
  
   return (
-    <div className="p-4">
+    <article className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Google Gemini Vision OCR</h1>
 
-        <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="m-8" />
+        <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="m-8 cursor-pointer" />
         <button
             onClick={processImages}
-            className={`bg-blue-500 text-white px-4 py-2 rounded ${
+            className={`bg-blue-500 text-white px-4 py-2 rounded-md ${
                 isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'hover:bg-blue-600'
             }`}
             disabled={isProcessing}
         >
-            Process Images
+            {isProcessing ? 'Processing...' : 'Process Images'}
         </button>
 
-        <p className="text-gray-500 mt-4 mb-8 font-bold italic">{status}</p>
+        <p className="text-zinc-400 mt-4 mb-8 font-bold italic text-sm">{status}</p>
 
         {isProcessed && (
-            <div className="grid grid-cols-1 gap-4 mt-4">
+            <article className="grid grid-cols-1 gap-4 mt-4">
             {images.map((image, index) => (
-              <div
+              <article
                 key={index}
                 className="flex items-center border p-4 rounded-lg shadow-lg bg-zinc-800"
               >
@@ -235,7 +224,7 @@ const ImageProcessor = () => {
                   alt={`Uploaded ${index}`}
                   className="w-72 h-auto object-cover rounded-md mr-4"
                 />
-                <div className='flex-1'>
+                <article className='flex-1'>
                 {editingIndex === index ? (
                     <>
                       <textarea
@@ -257,7 +246,7 @@ const ImageProcessor = () => {
                     </>
                   ) : (
                     <>
-                      <p className="text-zinc-50 whitespace-pre-wrap text-left border-dashed border py-3 pl-3 rounded-lg">{texts[index]}</p>
+                      <p className="text-zinc-50 whitespace-pre-wrap text-left border-dashed border-zinc-300 border-2 p-3 rounded-lg">{texts[index]}</p>
                       <div className='w-full flex justify-end pr-2 pt-1'>
                         <button
                             onClick={() => handleEdit(index)}
@@ -311,12 +300,12 @@ const ImageProcessor = () => {
                       </div>
                     </>
                   )}
-                </div>
-              </div>
+                </article>
+              </article>
             ))}
-          </div>
+          </article>
         )}
-    </div>
+    </article>
   );
 };
 
