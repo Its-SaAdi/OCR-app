@@ -3,6 +3,7 @@ import geminiService from '../../services/GeminiService';
 import cacheService from '../../cache/cacheService';
 import { generatePDF, generateTxt } from '../../services/pdf_txt_service';
 import { generateDocx, generateXlsx } from '../../services/docx_xlsx_service';
+import { isTableLike } from '../../services/table_handler';
 
 const ImageProcessor = () => {
   const [images, setImages] = useState([]);
@@ -194,6 +195,21 @@ const ImageProcessor = () => {
     // XLSX.utils.book_append_sheet(workbook, worksheet, "Extracted Text");
     // XLSX.writeFile(workbook, `ExtractedText_${index + 1}.xlsx`);
   };
+
+  const handleDownload = (index) => {
+    const text = texts[index] || "No text extracted.";
+    const { isTable } = isTableLike(text);
+    console.log(isTable);
+
+    if (isTable) {
+      generateXlsx(text);
+      console.log("Generating Excel file...");
+      
+    } else {
+      generateDocx(text);
+      console.log("Generating Word file...");
+    }
+  };
  
   return (
     <article className="container mx-auto p-4">
@@ -294,6 +310,13 @@ const ImageProcessor = () => {
                             className="bg-green-500 text-white px-2 py-1 rounded mt-2 hover:bg-green-600"
                           >
                             Excel
+                          </button>
+
+                          <button
+                            onClick={() => handleDownload(index)}
+                            className='bg-pink-500 text-cyan-400 '
+                          >
+                            {isTableLike(texts[index]).isTable ? "Excel" : "Word"}
                           </button>
                           
                         </div>
