@@ -1,9 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import geminiService from '../../services/GeminiService';
 import cacheService from '../../cache/cacheService';
+import svgConf from '../../config/svgConfig';
 import { generatePDF, generateTxt } from '../../services/pdf_txt_service';
 import { generateDocx, generateXlsx } from '../../services/docx_xlsx_service';
 import { isTableLike } from '../../services/table_handler';
+import imageInputPic from '../../assets/image-input.png'
+import { ScanSearch, Loader, SquarePen, Copy, Save, EllipsisVertical } from 'lucide-react';
 
 const ImageProcessor = () => {
   const [images, setImages] = useState([]);
@@ -12,6 +15,8 @@ const ImageProcessor = () => {
   const [isProcessing, setIsProcessing] = useState(false); // Button disabled flag
   const [isProcessed, setIsProcessed] = useState(false); // Flag to check if images have been processed
   const [editingIndex, setEditingIndex] = useState(null); // Track which text is being edited
+  // const [showMenu, setShowMenu] = useState(false);  // display available downlaodable format options
+  const [openMenuId, setOpenMenuId] = useState(null);
   
   const generateImageHash = useCallback((base64) => {
     let hash = 0;
@@ -48,7 +53,7 @@ const ImageProcessor = () => {
 
   const processImages = useCallback(async () => {
     if (images.length === 0) {
-      setStatus('Please select at least one image file..');
+      setStatus('Please select at least one image file...');
       return;
     }
 
@@ -116,6 +121,33 @@ const ImageProcessor = () => {
   const handleCopy = (index) => {
     const textToCopy = texts[index];
     navigator.clipboard.writeText(textToCopy).then(() => alert('Text copied to clipboard!'));
+  };
+
+  // Download functions for different formats
+  const handleDownloadForFormat = (format, index) => {
+    const textToDownload = texts[index] || 'No text found';
+
+    switch (format) {
+      case "txt":
+        generateTxt(textToDownload);
+        console.log("Downloading as TXT...");
+        break;
+      case "pdf":
+        generatePDF(textToDownload);
+        console.log("Downloading as PDF...");
+        break;
+      case "docx":
+        generateDocx(textToDownload);
+        console.log("Downloading as DOCX...");
+        break;
+      case "xlsx":
+        generateXlsx(textToDownload);
+        console.log("Downloading as Excel...");
+        break;
+      default:
+        console.log("Unknown format");
+    }
+    setOpenMenuId(null); // Hide menu after selection
   };
 
   const handleDownloadText = (index) => {
@@ -212,35 +244,61 @@ const ImageProcessor = () => {
   };
  
   return (
-    <article className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Google Gemini Vision OCR</h1>
+    <article className="container mx-auto p-4 pb-8">
+        <h1 className="text-2xl font-bold mb-8">Google Gemini Vision OCR</h1>
 
-        <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="m-8 cursor-pointer" />
-        <button
-            onClick={processImages}
-            className={`bg-blue-500 text-white px-4 py-2 rounded-md ${
-                isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'hover:bg-blue-600'
-            }`}
-            disabled={isProcessing}
+        <article 
+          className='max-w-lg h-auto mx-auto bg-zinc-50 rounded-xl flex flex-col justify-center items-center py-4'
         >
-            {isProcessing ? 'Processing...' : 'Process Images'}
-        </button>
+          <figure>
+            <img 
+              src={imageInputPic} 
+              alt="Upload-Image" 
+              className='w-[20%] h-auto mx-auto object-cover my-2'
+            />
+          </figure>
 
-        <p className="text-zinc-400 mt-4 mb-8 font-bold italic text-sm">{status}</p>
+          <p className='text-gray-800 font-semibold italic mb-6'>Upload your images here: </p>
+
+          {status && (
+            <p className="text-red-500 mb-6 font-bold italic text-sm">{status}</p>
+          )}
+
+          <article className='flex justify-center items-center gap-4 flex-wrap'>
+
+            <input type="file" multiple accept="image/*" onChange={handleImageUpload} 
+              className="file:bg-blue-600 file:hover:hover:bg-blue-500 file:duration-100 file:text-zinc-50 file:border-none file:rounded-xl file:py-2 file:px-4 file:mr-4 file:h-12 cursor-pointer file:text-sm file:font-semibold file:italic bg-white text-gray-800 text-sm font-medium border border-gray-300 rounded-xl shadow-md pr-4 file:cursor-pointer" 
+            />
+            <button
+                onClick={processImages}
+                className={`bg-zinc-900 text-zinc-50 p-2 shadow-md rounded-md duration-300 ${
+                    isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'hover:bg-gray-600'
+                }`}
+                disabled={isProcessing}
+            >
+                {isProcessing ? <Loader className='animate-spin' /> : <ScanSearch size={30} />}
+            </button>
+
+          </article>
+
+        </article>
 
         {isProcessed && (
-            <article className="grid grid-cols-1 gap-4 mt-4">
+            <article className="max-w-5xl grid grid-cols-1 gap-4 mt-8 mx-auto">
             {images.map((image, index) => (
               <article
                 key={index}
-                className="flex items-center border p-4 rounded-lg shadow-lg bg-zinc-800"
+                className="flex items-center gap-4 p-4 rounded-xl shadow-lg bg-zinc-50"
               >
-                <img
-                  src={`data:${image.mimeType};base64,${image.base64}`}
-                  alt={`Uploaded ${index}`}
-                  className="w-72 h-auto object-cover rounded-md mr-4"
-                />
-                <article className='flex-1'>
+                <article className=' bg-zinc-300 flex items-center justify-center rounded-xl p-2'>
+                  <img
+                    src={`data:${image.mimeType};base64,${image.base64}`}
+                    alt={`Uploaded ${index}`}
+                    className="w-72 h-auto object-cover rounded-lg "
+                  />
+                </article>
+
+                <article className='flex-1 relative'>
                 {editingIndex === index ? (
                     <>
                       <textarea
@@ -250,76 +308,110 @@ const ImageProcessor = () => {
                           newTexts[index] = e.target.value;
                           setTexts(newTexts);
                         }}
-                        className="w-full p-2 border rounded mt-2 text-black bg-gray-400"
+                        className="w-full p-2 border border-gray-700 rounded-md mt-2 text-black bg-gray-400"
                         rows={10}
                       />
-                      <button
-                        onClick={() => handleSave(index)}
-                        className="bg-green-500 text-white px-2 py-1 rounded mt-2 hover:bg-green-600"
-                      >
-                        Save
-                      </button>
+                      <div className='absolute top-3 right-2 flex gap-1'>
+                        <button
+                          onClick={() => handleSave(index)}
+                          className="bg-blue-600 text-white px-3 py-1 rounded-md mt-1 hover:bg-blue-500 duration-200"
+                          >
+                          <Save />
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <>
-                      <p className="text-zinc-50 whitespace-pre-wrap text-left border-dashed border-zinc-300 border-2 p-3 rounded-lg">{texts[index]}</p>
-                      <div className='w-full flex justify-end pr-2 pt-1'>
+                      <p className="w-full text-gray-800 font-semibold bg-zinc-300 whitespace-pre-wrap text-left p-3 rounded-md">{texts[index]}</p>
+                      <div className='absolute top-0 right-2 flex gap-1'>
                         <button
                             onClick={() => handleEdit(index)}
-                            className="bg-zinc-900 text-zinc-50 px-3 py-1 rounded mt-2 hover:bg-zinc-700"
+                            className="bg-zinc-800 text-zinc-50 p-1 rounded-md mt-2 hover:bg-zinc-700 duration-200"
                         >
-                            Edit
+                            <SquarePen />
                         </button>
         
                         <button
                             onClick={() => handleCopy(index)}
-                            className="bg-blue-500 text-white px-3 py-1 rounded mt-2 ml-2 hover:bg-blue-600"           
+                            className="bg-zinc-800 text-zinc-50 p-1 rounded-md mt-2 hover:bg-zinc-700 duration-200"           
                         >
-                            Copy
+                            <Copy />
+                        </button>
+                      </div>
+
+                      {/* Download Buttons */}
+                      <div className="mt-4 flex justify-end items-center gap-2">
+                        {/* dynamically decide what format should user text downlaod with.. */}
+                        <button
+                          onClick={() => handleDownload(index)}
+                          className='bg-zinc-800 hover:bg-zinc-700 text-zinc-50 p-2 rounded-md font-semibold italic duration-200'
+                        >
+                          <img 
+                            src={isTableLike(texts[index]).isTable ? svgConf.excelLLogo : svgConf.wordLogo} 
+                            alt={isTableLike(texts[index]).isTable ? "Download Excel" : "Download Word"} 
+                            width={24}
+                          />
                         </button>
 
-                        {/* Download Buttons */}
-                        <div className="ml-2 mt-2 flex space-x-2">
-                          {/* .txt file */}
-                          <button
-                            onClick={() => handleDownloadText(index)}
-                            className="bg-white text-black px-2 py-1 rounded hover:bg-gray-300"
+                        <div className="relative">
+                          <button 
+                            onClick={() => setOpenMenuId(openMenuId === index ? null : index)} 
+                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-50 p-2 rounded-lg font-semibold italic"
                           >
-                            Text
+                            <EllipsisVertical />
                           </button>
-
-                          {/* .pdf file */}
-                          <button
-                            onClick={() => handleDownloadPDF(index)}
-                            className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-500"
-                          >
-                            PDF
-                          </button>
-
-                          {/* word file */}
-                          <button
-                            onClick={() => handleDownloadWord(index)}
-                            className="bg-blue-500 text-white px-2 py-1 rounded mt-2 hover:bg-blue-600"
-                          >
-                            Word
-                          </button>
-
-                          {/* excel file */}
-                          <button
-                            onClick={() => handleDownloadExcel(index)}
-                            className="bg-green-500 text-white px-2 py-1 rounded mt-2 hover:bg-green-600"
-                          >
-                            Excel
-                          </button>
-
-                          <button
-                            onClick={() => handleDownload(index)}
-                            className='bg-pink-500 text-cyan-400 '
-                          >
-                            {isTableLike(texts[index]).isTable ? "Excel" : "Word"}
-                          </button>
-                          
+                          {openMenuId === index && (
+                            <div className="absolute right-0 -mt-48 w-44 bg-zinc-800 text-zinc-50 rounded-md shadow-lg">
+                              {[
+                                { format: ".txt", icon: svgConf.textLogo },
+                                { format: ".pdf", icon: svgConf.pdfLogo },
+                                { format: ".docx", icon: svgConf.wordLogo },
+                                { format: ".xlsx", icon: svgConf.excelLLogo },
+                              ].map(({ format, icon }) => (
+                                <button
+                                  key={format}
+                                  onClick={() => handleDownloadForFormat(format, index)}
+                                  className="block w-full text-left px-4 py-2 hover:bg-zinc-700 duration-300 rounded-md text-sm font-semibold"
+                                >
+                                  <img src={icon} alt="SVG" width={18} className='inline-block mr-1' /> {"Export as " + format.toUpperCase()}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
+
+                        {/* .txt file */}
+                        {/* <button
+                          onClick={() => handleDownloadText(index)}
+                          className="bg-white text-black px-2 py-1 rounded hover:bg-gray-300"
+                        >
+                          Text
+                        </button> */}
+
+                        {/* .pdf file */}
+                        {/* <button
+                          onClick={() => handleDownloadPDF(index)}
+                          className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-500"
+                        >
+                          PDF
+                        </button> */}
+
+                        {/* word file */}
+                        {/* <button
+                          onClick={() => handleDownloadWord(index)}
+                          className="bg-blue-500 text-white px-2 py-1 rounded mt-2 hover:bg-blue-600"
+                        >
+                          Word
+                        </button> */}
+
+                        {/* excel file */}
+                        {/* <button
+                          onClick={() => handleDownloadExcel(index)}
+                          className="bg-green-500 text-white px-2 py-1 rounded mt-2 hover:bg-green-600"
+                        >
+                          Excel
+                        </button> */}
+                        
                       </div>
                     </>
                   )}
