@@ -6,7 +6,7 @@ import { generatePDF, generateTxt } from '../../services/pdf_txt_service';
 import { generateDocx, generateXlsx } from '../../services/docx_xlsx_service';
 import { isTableLike } from '../../services/table_handler';
 import imageInputPic from '../../assets/image-input.png'
-import { ScanSearch, Loader, SquarePen, Copy, Save, EllipsisVertical } from 'lucide-react';
+import { ScanText, Loader, Pencil, Copy, Save, ChevronDown } from 'lucide-react';
 
 const ImageProcessor = () => {
   const [images, setImages] = useState([]);
@@ -245,7 +245,7 @@ const ImageProcessor = () => {
  
   return (
     <article className="container mx-auto p-4 pb-8">
-        <h1 className="text-2xl font-bold mb-8">Google Gemini Vision OCR</h1>
+        <h1 className="text-2xl font-bold mb-8">Optical Character Recognition [OCR] - Made Easy</h1>
 
         <article 
           className='max-w-lg h-auto mx-auto bg-zinc-50 rounded-xl flex flex-col justify-center items-center py-4'
@@ -275,8 +275,9 @@ const ImageProcessor = () => {
                     isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'hover:bg-gray-600'
                 }`}
                 disabled={isProcessing}
+                title='Click to perform OCR on selected images.'
             >
-                {isProcessing ? <Loader className='animate-spin' /> : <ScanSearch size={30} />}
+                {isProcessing ? <Loader className='animate-spin' /> : <ScanText size={30} />}
             </button>
 
           </article>
@@ -290,11 +291,11 @@ const ImageProcessor = () => {
                 key={index}
                 className="flex items-center gap-4 p-4 rounded-xl shadow-lg bg-zinc-50"
               >
-                <article className=' bg-zinc-300 flex items-center justify-center rounded-xl p-2'>
+                <article className='max-sm:hidden bg-zinc-300 flex items-center justify-center rounded-xl p-2'>
                   <img
                     src={`data:${image.mimeType};base64,${image.base64}`}
                     alt={`Uploaded ${index}`}
-                    className="w-72 h-auto object-cover rounded-lg "
+                    className="w-72 h-auto object-cover rounded-lg max-lg:w-60 max-md:w-40"
                   />
                 </article>
 
@@ -315,6 +316,7 @@ const ImageProcessor = () => {
                         <button
                           onClick={() => handleSave(index)}
                           className="bg-blue-600 text-white px-3 py-1 rounded-md mt-1 hover:bg-blue-500 duration-200"
+                          title='save'
                           >
                           <Save />
                         </button>
@@ -322,25 +324,31 @@ const ImageProcessor = () => {
                     </>
                   ) : (
                     <>
-                      <p className="w-full text-gray-800 font-semibold bg-zinc-300 whitespace-pre-wrap text-left p-3 rounded-md">{texts[index]}</p>
-                      <div className='absolute top-0 right-2 flex gap-1'>
-                        <button
-                            onClick={() => handleEdit(index)}
-                            className="bg-zinc-800 text-zinc-50 p-1 rounded-md mt-2 hover:bg-zinc-700 duration-200"
-                        >
-                            <SquarePen />
-                        </button>
-        
-                        <button
-                            onClick={() => handleCopy(index)}
-                            className="bg-zinc-800 text-zinc-50 p-1 rounded-md mt-2 hover:bg-zinc-700 duration-200"           
-                        >
-                            <Copy />
-                        </button>
-                      </div>
+                      <div className='bg-zinc-300 rounded-lg '>
+                        <div className='flex justify-end gap-4 pr-3'>
+                          <button
+                              onClick={() => handleEdit(index)}
+                              className=" text-gray-800 hover:text-gray-700 my-2 duration-200"
+                              title='Edit'
+                          >
+                              <Pencil size={21} />
+                          </button>
+          
+                          <button
+                              onClick={() => handleCopy(index)}
+                              className=" text-gray-800 hover:text-gray-700 my-2 duration-200"  
+                              title='Copy'         
+                          >
+                              <Copy size={21} />
+                          </button>
+                        </div>
+                        <p className="w-full text-gray-800 font-semibold bg-zinc-300 whitespace-pre-wrap text-left p-3 border-t-4 border-dashed border-zinc-400 rounded-b-md">{texts[index]}</p> 
+                      </div>     
 
                       {/* Download Buttons */}
                       <div className="mt-4 flex justify-end items-center gap-2">
+                        <p className='text-gray-800 font-semibold mr-1 italic '>Looks like this text works best in: </p>
+
                         {/* dynamically decide what format should user text downlaod with.. */}
                         <button
                           onClick={() => handleDownload(index)}
@@ -349,16 +357,17 @@ const ImageProcessor = () => {
                           <img 
                             src={isTableLike(texts[index]).isTable ? svgConf.excelLLogo : svgConf.wordLogo} 
                             alt={isTableLike(texts[index]).isTable ? "Download Excel" : "Download Word"} 
-                            width={24}
+                            className='min-w-[24px] w-6'
                           />
                         </button>
 
                         <div className="relative">
                           <button 
                             onClick={() => setOpenMenuId(openMenuId === index ? null : index)} 
-                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-50 p-2 rounded-lg font-semibold italic"
+                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-50 p-2 rounded-lg font-semibold italic group"
+                            title='Export as'
                           >
-                            <EllipsisVertical />
+                            Export as <span className='inline-block align-middle group-hover:animate-bounce duration-1000'><ChevronDown /></span>
                           </button>
                           {openMenuId === index && (
                             <div className="absolute right-0 -mt-48 w-44 bg-zinc-800 text-zinc-50 rounded-md shadow-lg">
