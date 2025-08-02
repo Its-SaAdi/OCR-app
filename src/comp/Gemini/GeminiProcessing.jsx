@@ -289,13 +289,13 @@ const ImageProcessor = () => {
             {images.map((image, index) => (
               <article
                 key={index}
-                className="flex items-center gap-4 p-4 rounded-xl shadow-lg bg-zinc-50"
+                className="flex items-center gap-4 p-4 rounded-xl shadow-xl bg-zinc-50"
               >
-                <article className='max-sm:hidden bg-zinc-300 flex items-center justify-center rounded-xl p-2'>
+                <article className='max-sm:hidden flex items-center justify-center'>
                   <img
                     src={`data:${image.mimeType};base64,${image.base64}`}
                     alt={`Uploaded ${index}`}
-                    className="w-72 h-auto object-cover rounded-lg max-lg:w-60 max-md:w-40"
+                    className="w-72 h-auto object-cover rounded-lg max-lg:w-60 max-md:w-40 shadow-lg"
                   />
                 </article>
 
@@ -312,13 +312,14 @@ const ImageProcessor = () => {
                         className="w-full p-2 border border-gray-700 rounded-md mt-2 text-black bg-gray-400"
                         rows={10}
                       />
-                      <div className='absolute top-3 right-2 flex gap-1'>
+                      <div className='flex justify-end max-sm:justify-center'>
                         <button
                           onClick={() => handleSave(index)}
-                          className="bg-blue-600 text-white px-3 py-1 rounded-md mt-1 hover:bg-blue-500 duration-200"
+                          className="bg-gray-800 hover:bg-gray-700 text-zinc-50  p-1 rounded-md mt-1 duration-200 "
                           title='save'
                           >
-                          <Save />
+                          <Save  />
+                          {/* Save */}
                         </button>
                       </div>
                     </>

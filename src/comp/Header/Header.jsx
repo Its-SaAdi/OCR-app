@@ -9,7 +9,7 @@ const Header = () => {
           <NavLink to="/" className="font-bold text-2xl">OCR</NavLink>
         </article>
         
-        <ul className="flex space-x-4">
+        {/* <ul className="flex space-x-4">
           <li>
             <NavLink to="/" className={({ isActive }) =>
               `px-3 py-2 rounded-md ${isActive ? 'bg-zinc-700 text-zinc-50 font-bold' : 'hover:bg-zinc-800 hover:text-zinc-50'}`
@@ -31,7 +31,14 @@ const Header = () => {
               Vision API
             </NavLink>
           </li>
-        </ul>
+          <li>
+            <NavLink to="/blogs" className={({ isActive }) =>
+              `px-3 py-2 rounded-md ${isActive ? 'bg-zinc-700 text-zinc-50 font-bold' : 'hover:bg-zinc-800 hover:text-zinc-50'}`
+            }>
+              Blogs
+            </NavLink>
+          </li>
+        </ul> */}
       </nav>
     </header>
   );
