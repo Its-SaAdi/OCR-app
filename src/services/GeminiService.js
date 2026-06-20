@@ -4,7 +4,7 @@ import conf from '../config/conf';
 export class GeminiService {
   constructor() {
     this.genAI = new GoogleGenerativeAI(conf.geminiApi);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   async processImages(images) {
